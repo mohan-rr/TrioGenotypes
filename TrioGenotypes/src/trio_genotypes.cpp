@@ -1,14 +1,16 @@
 #include <string>
 #include <vector>
 #include <fstream>
-
+#include <fstream>
 #include <Rcpp.h>
 
-[[Rcpp::export]]
+void open_bed_file(std::string &bed_filename, std::ifstream& bed_file);
+  
+// [[Rcpp::export]]
 Rcpp::List count_genotypes(std::string bed_filename, std::vector<int> trio_c, std::vector<int> trio_f, std::vector<int> trio_m, std::vector<int> trio_pheno, int n_ind, int n_snp){
 
 	std::ifstream bed_file;
-	open_bed_file(bed_filename, bed_file);
+	open_bed_file(bed_filename, bed_file, n_ind, n_snp);
 
 	// snp-major .bed files store data contiguously with 4 individual genotypes per byte. the last byte is padded.
 	// the order of individuals are in the same order as in the .fam file
@@ -16,16 +18,17 @@ Rcpp::List count_genotypes(std::string bed_filename, std::vector<int> trio_c, st
 	int remain = n_ind % 4;
 
     //genotype combinations (M,F,C)
-	Rcpp::IntegerMatrix R_case_trio_counts (15, nsnp);
-	Rcpp::IntegerMatrix R_ctrl_trio_counts (15, nsnp);
+	Rcpp::IntegerMatrix R_case_trio_counts (15, n_snp);
+	Rcpp::IntegerMatrix R_ctrl_trio_counts (15, n_snp);
 
 	char buffer[nbytes];
-	char read_bit, mother_geno, father_geno, child_geno;
+	char read_bit;
+	int mother_geno, father_geno, child_geno;
 	unsigned int genotype;
 	std::vector<char> geno_vec;
 	geno_vec.reserve(n_ind);
 
-	for(int h = 0; h < nSNP; h++){
+	for(int h = 0; h < n_snp; h++){
 		bed_file.read(buffer, nbytes);
 		for(int i = 0; i < nbytes - 1; i++){
 			read_bit = buffer[i];
@@ -39,22 +42,22 @@ Rcpp::List count_genotypes(std::string bed_filename, std::vector<int> trio_c, st
 		for (int j = 0; j < remain; j++){
 			genotype = read_bit & (char)3;
 			read_bit = read_bit >> 2;
-			geno_vec[(nbyte-1)*4 + j] = genotype;
+			geno_vec[(nbytes-1)*4 + j] = genotype;
 		}
 		
 		//father, mother, child. 4 genotype codes from bed file : 2 homo, hetero, missing
 		// 0 - A1 homozygote , 1 - heterozygote , 2 - missing , 3 - A2 homozygote
 		// we will use A1 as the risk allele
-		int ctrl_geno_count[4][4][4] = 0;
-		int case_geno_count[4][4][4] = 0; 
+		int ctrl_geno_count[4][4][4] = {0};
+		int case_geno_count[4][4][4] = {0}; 
 
 		for (size_t i = 0; i < trio_c.size(); i++)
 		{
-			mother_geno = geno_vec[case_trios.mother[i]];
-			father_geno = geno_vec[case_trios.father[i]];
-			child_geno  = geno_vec[case_trios.ind[i]];
-			if (trio_pheno == 1) ctrl_geno_count[mother_geno][father_geno][child_geno] ++ ;
-			if (trio_pheno == 2) case_geno_count[mother_geno][father_geno][child_geno] ++ ;
+			mother_geno = geno_vec[trio_m[i]];
+			father_geno = geno_vec[trio_f[i]];
+			child_geno  = geno_vec[trio_c[i]];
+			if (trio_pheno[i] == 1) ctrl_geno_count[mother_geno][father_geno][child_geno] ++ ;
+			if (trio_pheno[i] == 2) case_geno_count[mother_geno][father_geno][child_geno] ++ ;
 		}
 		//list the 15 combinations 
 		// don't like typing them all out but it's branchless, 
@@ -91,18 +94,17 @@ Rcpp::List count_genotypes(std::string bed_filename, std::vector<int> trio_c, st
 		R_ctrl_trio_counts(h, 13) = ctrl_geno_count[3][1][3];
 		R_ctrl_trio_counts(h, 14) = ctrl_geno_count[3][3][3]; 
 	}
-	return List::create( 
-	_["vec"]  = someVector, 
-	_["lst"]  = someList, 
-	_["vec2"] = someOtherVector
+	return Rcpp::List::create( 
+	  Rcpp::Named("case")  = R_case_trio_counts, 
+	  Rcpp::Named("ctrl")  = R_ctrl_trio_counts 
 	) ;
 }
 
 
-void open_bed_file(std::string &bed_filename, std::ifstream& bed_file){
+void open_bed_file(std::string &bed_filename, std::ifstream& bed_file, int n_ind, int n_snp){
 		
-	bed_file.open(bed_filename.c_str(), ios::binary);
-	if(!readBinaryGenotypeData.is_open()) Rcpp::stop("\nCannot open .bed file");
+	bed_file.open(bed_filename.c_str(), std::ifstream::binary);
+	if(!bed_file.is_open()) Rcpp::stop("\nCannot open .bed file");
 	
 	char buffer[3];
 	bed_file.read(buffer, 3);
@@ -118,7 +120,7 @@ void open_bed_file(std::string &bed_filename, std::ifstream& bed_file){
 	Rcpp::stop("currently only snp-major mode .bed files are supported. please use plink --make-bed to output a snp-major .bed file");		
 	}
 
-	//the bed file should be ciel(nind/4)*nsnp bytes + 3 bytes long
+	//the bed file should be ciel(nind/4)*n_snp bytes + 3 bytes long
 	// add in check to see that filesize is correct. 
-	// ifstream::tellg should work... there's also std::filesystem but that's c++17 
+	// ifstream::tellg 
 }
