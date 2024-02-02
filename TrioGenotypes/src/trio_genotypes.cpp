@@ -4,11 +4,9 @@
 #include <fstream>
 #include <Rcpp.h>
 
-void open_bed_file(std::string &bed_filename, std::ifstream& bed_file);
-  
-// [[Rcpp::export]]
-Rcpp::List count_genotypes(std::string bed_filename, std::vector<int> trio_c, std::vector<int> trio_f, std::vector<int> trio_m, std::vector<int> trio_pheno, int n_ind, int n_snp){
+void open_bed_file(std::string &bed_filename, std::ifstream& bed_file, int n_ind, int n_snp);
 
+Rcpp::List count_genotypes(std::string bed_filename, std::vector<int> trio_c, std::vector<int> trio_f, std::vector<int> trio_m, std::vector<int> trio_pheno, int n_ind, int n_snp){
 	std::ifstream bed_file;
 	open_bed_file(bed_filename, bed_file, n_ind, n_snp);
 

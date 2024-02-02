@@ -38,10 +38,11 @@ trio_genotypes <- function(filepath){
     names(snp_info) <- c("chr", "snp", "A1", "A2")
     cat("\n number of SNP's: ", nrow(snp_info))
 
-    trio_counts <- .Call(count_genotypes, toString(bed_file), trio_c, trio_f, trio_m, trio_pheno, length(full_ID), nrow(snp_info), package="geno_count")
+    # trio_counts <- count_genotypes( toString(bed_file), trio_c, trio_f, trio_m, trio_pheno, length(full_ID), nrow(snp_info))
+    trio_counts <- .Call(`_TrioGenotypes_count_genotypes`, toString(bed_file), trio_c, trio_f, trio_m, trio_pheno, length(full_ID), nrow(snp_info))
     # res <- microbenchmark(count_genotypes(bed_file, trio_c, trio_f, trio_m, trio_pheno, length(full_ID), nrow(snp_info)))
     # print(res)
-    rownames(trio_counts$case) <- c("222", "212", "211", "122", "121", "021", "112", "111", "110", "101", "100", "011", "010", "000")
-    rownames(trio_counts$ctrl) <- c("222", "212", "211", "122", "121", "021", "112", "111", "110", "101", "100", "011", "010", "000")
+    rownames(trio_counts$case) <- c("222", "212", "211", "122", "121", "201", "021", "112", "111", "110", "101", "100", "011", "010", "000")
+    rownames(trio_counts$ctrl) <- c("222", "212", "211", "122", "121", "201", "021", "112", "111", "110", "101", "100", "011", "010", "000")
     return(list(snp_info = snp_info, case_trios = trio_counts$case, ctrl_trios = trio_counts$ctrl))
 }

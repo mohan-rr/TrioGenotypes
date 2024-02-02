@@ -1,3 +1,5 @@
 useDynLib(TrioGenotypes, .registration=TRUE)
 importFrom(Rcpp, evalCpp)
+importFrom(data.table, fread)
+export(trio_genotypes)
 exportPattern("^[[:alpha:]]+")
