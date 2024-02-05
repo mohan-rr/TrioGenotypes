@@ -43,6 +43,7 @@ Rcpp::List count_genotypes(std::string bed_filename, std::vector<int> trio_c, st
 			geno_vec[(nbytes-1)*4 + j] = genotype;
 		}
 		
+		Rcpp::Rcout << "trio_c.size() " << trio_c.size() << "\n" ; 
 		//father, mother, child. 4 genotype codes from bed file : 2 homo, hetero, missing
 		// 0 - A1 homozygote , 1 - heterozygote , 2 - missing , 3 - A2 homozygote
 		// we will use A1 as the risk allele
