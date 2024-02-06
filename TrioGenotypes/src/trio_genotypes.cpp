@@ -1,7 +1,7 @@
 #include <string>
 #include <vector>
 #include <fstream>
-#include <fstream>
+#include <iostream>
 #include <Rcpp.h>
 
 void open_bed_file(std::string &bed_filename, std::ifstream& bed_file, int n_ind, int n_snp);
@@ -22,11 +22,15 @@ Rcpp::List count_genotypes(std::string bed_filename, std::vector<int> trio_c, st
 	char buffer[nbytes];
 	char read_bit;
 	int mother_geno, father_geno, child_geno;
-	unsigned int genotype;
+	char genotype;
 	std::vector<char> geno_vec;
 	geno_vec.reserve(n_ind);
 
-	for(int h = 0; h < n_snp; h++){
+	std::ofstream logfile;
+	logfile.open ("log.txt");
+	logfile << "aaa\n" << std::flush;
+
+	for(int h = 0; h < 20; h++){
 		bed_file.read(buffer, nbytes);
 		for(int i = 0; i < nbytes - 1; i++){
 			read_bit = buffer[i];
@@ -42,57 +46,69 @@ Rcpp::List count_genotypes(std::string bed_filename, std::vector<int> trio_c, st
 			read_bit = read_bit >> 2;
 			geno_vec[(nbytes-1)*4 + j] = genotype;
 		}
-		
-		Rcpp::Rcout << "trio_c.size() " << trio_c.size() << "\n" ; 
-		//father, mother, child. 4 genotype codes from bed file : 2 homo, hetero, missing
-		// 0 - A1 homozygote , 1 - heterozygote , 2 - missing , 3 - A2 homozygote
-		// we will use A1 as the risk allele
-		int ctrl_geno_count[4][4][4] = {0};
-		int case_geno_count[4][4][4] = {0}; 
 
+		for (int i = 0; i < n_ind; i++){
+			logfile << (int)geno_vec[i] << " " ;
+		}
+		logfile << "\n-------------\n" << std::flush;
+
+		//father, mother, child. 4 genotype codes from bed file : 2 homo, hetero, missing
+		// 0 - A1 homozygote , 1 - missing , 2 - heterozygote , 3 - A2 homozygote
+		// we will use A1 as the risk allele
+		int ctrl_geno_count[4][4][4] = {{{0}}};
+		int case_geno_count[4][4][4] = {{{0}}}; 
+		
 		for (size_t i = 0; i < trio_c.size(); i++)
-		{
-			mother_geno = geno_vec[trio_m[i]];
-			father_geno = geno_vec[trio_f[i]];
-			child_geno  = geno_vec[trio_c[i]];
+		{	
+			// -1 bc. the index is from R
+			mother_geno = geno_vec[trio_m[i] - 1];
+			father_geno = geno_vec[trio_f[i] - 1];
+			child_geno  = geno_vec[trio_c[i] - 1];
+			logfile << trio_m[i] << " " << trio_f[i] << " " << trio_c[i] << "\n";
+			logfile << mother_geno << " " << father_geno << " " << child_geno << "\n";
+			logfile << std::flush;
 			if (trio_pheno[i] == 1) ctrl_geno_count[mother_geno][father_geno][child_geno] ++ ;
 			if (trio_pheno[i] == 2) case_geno_count[mother_geno][father_geno][child_geno] ++ ;
 		}
+		logfile << "-----\n";
+
 		//list the 15 combinations 
 		// don't like typing them all out but it's branchless, 
 		// could have calculated the index but the missing index is 2 which throws it off
-		R_case_trio_counts(h, 0)  = case_geno_count[0][0][0];
-		R_case_trio_counts(h, 1)  = case_geno_count[0][1][0];
-		R_case_trio_counts(h, 2)  = case_geno_count[0][1][1];
-		R_case_trio_counts(h, 3)  = case_geno_count[1][0][0];
-		R_case_trio_counts(h, 4)  = case_geno_count[1][0][1];
-		R_case_trio_counts(h, 5)  = case_geno_count[0][3][1];
-		R_case_trio_counts(h, 6)  = case_geno_count[3][0][1];
-		R_case_trio_counts(h, 7)  = case_geno_count[1][1][0];
-		R_case_trio_counts(h, 8)  = case_geno_count[1][1][1];
-		R_case_trio_counts(h, 9)  = case_geno_count[1][1][3];
-		R_case_trio_counts(h, 10) = case_geno_count[1][3][1];
-		R_case_trio_counts(h, 11) = case_geno_count[1][3][3];
-		R_case_trio_counts(h, 12) = case_geno_count[3][1][1];
-		R_case_trio_counts(h, 13) = case_geno_count[3][1][3];
-		R_case_trio_counts(h, 14) = case_geno_count[3][3][3];
+		R_case_trio_counts(0, h)  = case_geno_count[0][0][0];
+		R_case_trio_counts(1, h)  = case_geno_count[0][2][0];
+		R_case_trio_counts(2, h)  = case_geno_count[0][2][2];
+		R_case_trio_counts(3, h)  = case_geno_count[2][0][0];
+		R_case_trio_counts(4, h)  = case_geno_count[2][0][2];
+		R_case_trio_counts(5, h)  = case_geno_count[0][3][2];
+		R_case_trio_counts(6, h)  = case_geno_count[3][0][2];
+		R_case_trio_counts(7, h)  = case_geno_count[2][2][0];
+		R_case_trio_counts(8, h)  = case_geno_count[2][2][2];
+		R_case_trio_counts(9, h)  = case_geno_count[2][2][3];
+		R_case_trio_counts(10,h) = case_geno_count[2][3][2];
+		R_case_trio_counts(11,h) = case_geno_count[2][3][3];
+		R_case_trio_counts(12,h) = case_geno_count[3][2][2];
+		R_case_trio_counts(13,h) = case_geno_count[3][2][3];
+		R_case_trio_counts(14,h) = case_geno_count[3][3][3];
 
-		R_ctrl_trio_counts(h, 0)  = ctrl_geno_count[0][0][0]; 
-		R_ctrl_trio_counts(h, 1)  = ctrl_geno_count[0][1][0];
-		R_ctrl_trio_counts(h, 2)  = ctrl_geno_count[0][1][1]; 
-		R_ctrl_trio_counts(h, 3)  = ctrl_geno_count[1][0][0]; 
-		R_ctrl_trio_counts(h, 4)  = ctrl_geno_count[1][0][1];
-		R_ctrl_trio_counts(h, 5)  = ctrl_geno_count[0][3][1]; 
-		R_ctrl_trio_counts(h, 6)  = ctrl_geno_count[3][0][1]; 
-		R_ctrl_trio_counts(h, 7)  = ctrl_geno_count[1][1][0];
-		R_ctrl_trio_counts(h, 8)  = ctrl_geno_count[1][1][1]; 		
-		R_ctrl_trio_counts(h, 9)  = ctrl_geno_count[1][1][3]; 
-		R_ctrl_trio_counts(h, 10) = ctrl_geno_count[1][3][1];
-		R_ctrl_trio_counts(h, 11) = ctrl_geno_count[1][3][3]; 
-		R_ctrl_trio_counts(h, 12) = ctrl_geno_count[3][1][1]; 
-		R_ctrl_trio_counts(h, 13) = ctrl_geno_count[3][1][3];
-		R_ctrl_trio_counts(h, 14) = ctrl_geno_count[3][3][3]; 
+		R_ctrl_trio_counts(0, h)  = ctrl_geno_count[0][0][0]; 
+		R_ctrl_trio_counts(1, h)  = ctrl_geno_count[0][2][0];
+		R_ctrl_trio_counts(2, h)  = ctrl_geno_count[0][2][2]; 
+		R_ctrl_trio_counts(3, h)  = ctrl_geno_count[2][0][0]; 
+		R_ctrl_trio_counts(4, h)  = ctrl_geno_count[2][0][2];
+		R_ctrl_trio_counts(5, h)  = ctrl_geno_count[0][3][2]; 
+		R_ctrl_trio_counts(6, h)  = ctrl_geno_count[3][0][2]; 
+		R_ctrl_trio_counts(7, h)  = ctrl_geno_count[2][2][0];
+		R_ctrl_trio_counts(8, h)  = ctrl_geno_count[2][2][2]; 		
+		R_ctrl_trio_counts(9, h)  = ctrl_geno_count[2][2][3]; 
+		R_ctrl_trio_counts(10, h) = ctrl_geno_count[2][3][2];
+		R_ctrl_trio_counts(11, h) = ctrl_geno_count[2][3][3]; 
+		R_ctrl_trio_counts(12, h) = ctrl_geno_count[3][2][2]; 
+		R_ctrl_trio_counts(13, h) = ctrl_geno_count[3][2][3];
+		R_ctrl_trio_counts(14, h) = ctrl_geno_count[3][3][3]; 
 	}
+
+	logfile.close();
 	return Rcpp::List::create( 
 	  Rcpp::Named("case")  = R_case_trio_counts, 
 	  Rcpp::Named("ctrl")  = R_ctrl_trio_counts 
