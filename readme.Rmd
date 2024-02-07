@@ -1,0 +1,48 @@
+---
+title: ''
+output: html_document
+---
+
+The `trio_genotypes()` function only takes in a single string as input, which is the path to the .bim/.bed/.fam files to be used for input. These 3 files should be in the same directory. The PLINK `--make-bed` command can be used to convert filetypes.
+
+Some other plink commands can be used to prepare the input files beforehand: `--snps-only` to only keep SNPs, `--autosome` to keep only autosomal variants, `--biallelic-only` to skip all variants with more than 2 alternate alleles.
+  
+The `trio_genotypes()` function will use the A1 alleles as the risk allele. You can modify this in Plink using the  `--a1-allele` or `--a2-allele` commands to set the desired allele as the risk allele. By default the major allele is set to A2 but this is not always the case, and plink 2.0 seperates the "major/minor allele" and "reference allele" concepts.  
+
+
+```{r}
+library(TrioGenotypes)
+counts <- trio_genotypes("./g1k_CEU_filtered")
+```
+
+The function returns a list with 3 elements: "snp_info", "case_trios", "ctrl_trios":  
+
+```{r}
+str(counts)
+```
+
+```{r}
+counts$snp_info[1:10,]
+```
+
+"case_trios" and "ctrl_trios" have a column for each SNP. The rows are labelled with the number of risk alleles for mother, father, child (MFC). So, 212 would be a trio where the mother has 2 risk alleles, the father 1, and the child 2.
+
+```{r}
+counts$case_trios[,1:10]
+```
+
+```{r}
+counts$ctrl_trios[,1:10]
+```
+
+## To-do:
+
+* Right now the function only counts case and control trios. Can add counts for dyads/parents/singletons later.
+* Function currently reads in all SNPs in the .bim/.bed file. Can add ability to specify desired SNPs.
+* should probably set an upper limit to the number of SNPs to read into R. Right now will create as large a matrix as there are SNPs, can potentially crash due to memory usage.
+* The function will 'double-count' individuals if they are present in multiple complete trios. E.g.: if there is a child with 2 parents, and the grandparents are also in the .bed file, then we have 3 complete trios. The parents will be the children for 2 of the trios. If there are siblings they will be counted as independent complete trios. Can add a 'proband' input so that only specified individuals are used.
+* can multithread the reading of next SNP and generating the counts of previous SNP.
+* should benchmark use of Rcpp::IntegerMatrix compared to creating a matrix in R and using the SEXP pointer.
+* can allow the .bed/.bim/.fam files to be specified seperately
+
+

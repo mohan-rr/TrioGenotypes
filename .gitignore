@@ -1,4 +1,8 @@
+*.Rproj
 .Rproj.user
 .Rhistory
 .RData
 .Ruserdata
+caseparenttrios.dat
+conparents.dat
+test.*
