@@ -6,3 +6,6 @@
 caseparenttrios.dat
 conparents.dat
 test.*
+*.o
+*.dll
+.vscode
