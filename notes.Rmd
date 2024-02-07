@@ -35,14 +35,16 @@ counts$case_trios[,1:10]
 counts$ctrl_trios[,1:10]
 ```
 
+note that sometimes the frequency is "reversed" (i.e.: 222 more common than 000) this would be because the A1 allele in the plink file is actually the major allele.  
+
 ## To-do:
 
 * Right now the function only counts case and control trios. Can add counts for dyads/parents/singletons later.
-* Function currently reads in all SNPs in the .bim/.bed file. Can add ability to specify desired SNPs.
+* Function currently reads in all SNPs in the .bim/.bed file. Should add a way to select a range/subset of SNPs.
 * should probably set an upper limit to the number of SNPs to read into R. Right now will create as large a matrix as there are SNPs, can potentially crash due to memory usage.
 * The function will 'double-count' individuals if they are present in multiple complete trios. E.g.: if there is a child with 2 parents, and the grandparents are also in the .bed file, then we have 3 complete trios. The parents will be the children for 2 of the trios. If there are siblings they will be counted as independent complete trios. Can add a 'proband' input so that only specified individuals are used.
 * can multithread the reading of next SNP and generating the counts of previous SNP.
 * should benchmark use of Rcpp::IntegerMatrix compared to creating a matrix in R and using the SEXP pointer.
-* can allow the .bed/.bim/.fam files to be specified seperately
+* can allow the .bed/.bim/.fam files to be specified separately
 
 

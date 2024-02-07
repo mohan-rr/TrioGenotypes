@@ -96,7 +96,6 @@ Rcpp::List count_genotypes(std::string bed_filename, std::vector<int> trio_c, st
 		R_ctrl_trio_counts(14, h) = ctrl_geno_count[3][3][3]; 
 	}
 
-	logfile.close();
 	return Rcpp::List::create( 
 	  Rcpp::Named("case")  = R_case_trio_counts, 
 	  Rcpp::Named("ctrl")  = R_ctrl_trio_counts 
