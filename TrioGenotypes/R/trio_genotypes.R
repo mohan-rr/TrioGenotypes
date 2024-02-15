@@ -9,7 +9,7 @@ trio_genotypes <- function(filepath){
     cat("\n bed file: \n", bed_file)
 
     #columns : 1 - Family ID, 2 - ind ID, 3 - father, 4 - mother, 5 -sex, 6 - phenotype (1/2)
-    fam_file <- fread(fam_file, sep="\t", colClasses = list(character=1:4), header=FALSE, data.table=FALSE)
+    fam_file <- fread(fam_file, sep="", colClasses = list(character=1:4), header=FALSE, data.table=FALSE)
 
     trios <- which((fam_file[,3] != "0") & (fam_file[,4] != "0"))
     check_fathers_present <- fam_file[trios,3] %in% fam_file[,2]

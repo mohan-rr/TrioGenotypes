@@ -19,7 +19,7 @@ Rcpp::List count_genotypes(std::string bed_filename, std::vector<int> trio_c, st
 	Rcpp::IntegerMatrix R_case_trio_counts (15, n_snp);
 	Rcpp::IntegerMatrix R_ctrl_trio_counts (15, n_snp);
 
-	char buffer[nbytes];
+	char buffer[1024 * 256]; //big enough for 1mil individuals
 	char read_bit;
 	int mother_geno, father_geno, child_geno;
 	char genotype;

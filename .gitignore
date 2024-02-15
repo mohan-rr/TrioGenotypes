@@ -9,3 +9,5 @@ test.*
 *.o
 *.dll
 .vscode
+/src-x64
+/src-i386
