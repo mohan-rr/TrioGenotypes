@@ -1,5 +1,5 @@
 
-trio_genotypes <- function(filepath){
+trio_genotypes <- function(filepath, missing_as_ctrl = TRUE){
     fam_file <- normalizePath(paste0(filepath,".fam"), mustWork = TRUE)
     bim_file <- normalizePath(paste0(filepath,".bim"), mustWork = TRUE)
     bed_file <- normalizePath(paste0(filepath,".bed"), mustWork = TRUE)
@@ -7,7 +7,7 @@ trio_genotypes <- function(filepath){
     cat("\n fam file: \n", fam_file)
     cat("\n bim file: \n", bim_file)
     cat("\n bed file: \n", bed_file)
-
+    cat("\n ------------- \n ")
     #columns : 1 - Family ID, 2 - ind ID, 3 - father, 4 - mother, 5 -sex, 6 - phenotype (1/2)
     fam_file <- fread(fam_file, colClasses = list(character=1:4), header=FALSE, data.table=FALSE)
 
@@ -32,7 +32,17 @@ trio_genotypes <- function(filepath){
     trio_f  <- match(trio_f, full_ID)
     trio_m  <- match(trio_m, full_ID)
     trio_pheno <- fam_file[trios,6]
-
+    cat("\n trio children have the following phenotypes: \n")
+    print(table(trio_pheno))
+    cat("\n '1' is ctrl, '2' is case. The rest treated as missing data")
+    if (missing_as_ctrl){
+        cat("\n treating missing phenotype trio as control")
+        missing_pheno <- trio_pheno[(trio_pheno != 1) & (trio_pheno != 2)]
+        cat("\n ", length(missing_pheno), "missing phenotype trios treated as control")
+        trio_pheno[missing_pheno] <- 1
+    }
+    
+    cat("\n ------------- \n ")
     cat("\n number of individuals in .fam file: ", length(full_ID))
     cat("\n number of case trios: ", sum(trio_pheno == 2))
     cat("\n number of control trios: ", sum(trio_pheno == 1))
