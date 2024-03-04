@@ -8,7 +8,6 @@ void open_bed_file(std::string &bed_filename, std::ifstream& bed_file, int n_ind
 
 Rcpp::List count_genotypes(std::string bed_filename, std::vector<int> trio_c, std::vector<int> trio_f, std::vector<int> trio_m, std::vector<int> trio_pheno, int n_ind, int n_snp){
 	std::ifstream bed_file;
-	std::ofstream log("logfile.txt");
 	open_bed_file(bed_filename, bed_file, n_ind, n_snp);
 
 	// snp-major .bed files store data contiguously with 4 individual genotypes per byte. the last byte is padded.
@@ -27,11 +26,8 @@ Rcpp::List count_genotypes(std::string bed_filename, std::vector<int> trio_c, st
 	std::vector<char> geno_vec;
 	geno_vec.reserve(n_ind);
 
-	log << "A" << std::endl;
 	for(int h = 0; h < n_snp; h++){
-		log << h << std::endl;
 		bed_file.read(buffer, nbytes);
-		log << "B" << std::endl;
 		for(int i = 0; i < nbytes - 1; i++){
 			read_bit = buffer[i];
 			for (int j = 0; j < 4; j++){
@@ -46,27 +42,22 @@ Rcpp::List count_genotypes(std::string bed_filename, std::vector<int> trio_c, st
 			read_bit = read_bit >> 2;
 			geno_vec[(nbytes-1)*4 + j] = genotype;
 		}
-		log << "C" << std::endl;
 
 		//father, mother, child. 4 genotype codes from bed file : 2 homo, hetero, missing
 		// 0 - A1 homozygote , 1 - missing , 2 - heterozygote , 3 - A2 homozygote
 		// we will use A1 as the risk allele
 		int ctrl_geno_count[4][4][4] = {{{0}}};
 		int case_geno_count[4][4][4] = {{{0}}}; 
-		log << "D" << std::endl;
 		
 		for (size_t i = 0; i < trio_c.size(); i++)
 		{	
-			log << i << std::endl;
 			// -1 bc. the index is from R
 			mother_geno = geno_vec[trio_m[i] - 1];
 			father_geno = geno_vec[trio_f[i] - 1];
 			child_geno  = geno_vec[trio_c[i] - 1];
-
 			if (trio_pheno[i] == 1) ctrl_geno_count[mother_geno][father_geno][child_geno] ++ ;
 			else if (trio_pheno[i] == 2) case_geno_count[mother_geno][father_geno][child_geno] ++ ;
 		}
-		log << "E" << std::endl;
 
 		//list the 15 combinations 
 		// don't like typing them all out but it's branchless, 
